@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,7 +62,13 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+                // Custom colors for our app
+                mint: "#D4F5E9",
+                lavender: "#E5DEFF",
+                peach: "#FFE3D9",
+                skyblue: "#D3E8FF",
+                rose: "#FFDEE2",
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -70,26 +77,74 @@ export default {
 			},
 			keyframes: {
 				'accordion-down': {
-					from: {
-						height: '0'
-					},
-					to: {
-						height: 'var(--radix-accordion-content-height)'
-					}
+					from: { height: '0', opacity: '0' },
+					to: { height: 'var(--radix-accordion-content-height)', opacity: '1' }
 				},
 				'accordion-up': {
-					from: {
-						height: 'var(--radix-accordion-content-height)'
-					},
-					to: {
-						height: '0'
-					}
-				}
+					from: { height: 'var(--radix-accordion-content-height)', opacity: '1' },
+					to: { height: '0', opacity: '0' }
+				},
+                'fade-in': {
+                    '0%': { opacity: '0', transform: 'translateY(10px)' },
+                    '100%': { opacity: '1', transform: 'translateY(0)' }
+                },
+                'fade-out': {
+                    '0%': { opacity: '1', transform: 'translateY(0)' },
+                    '100%': { opacity: '0', transform: 'translateY(10px)' }
+                },
+                'scale-in': {
+                    '0%': { transform: 'scale(0.95)', opacity: '0' },
+                    '100%': { transform: 'scale(1)', opacity: '1' }
+                },
+                'slide-in-right': {
+                    '0%': { transform: 'translateX(100%)' },
+                    '100%': { transform: 'translateX(0)' }
+                },
+                'slide-in-left': {
+                    '0%': { transform: 'translateX(-100%)' },
+                    '100%': { transform: 'translateX(0)' }
+                },
+                'pulse-soft': {
+                    '0%, 100%': { opacity: '1' },
+                    '50%': { opacity: '0.7' }
+                },
+                'float': {
+                    '0%, 100%': { transform: 'translateY(0)' },
+                    '50%': { transform: 'translateY(-10px)' }
+                },
+                'typing': {
+                    '0%': { width: '0%' },
+                    '100%': { width: '100%' }
+                },
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
-			}
+				'accordion-up': 'accordion-up 0.2s ease-out',
+                'fade-in': 'fade-in 0.5s ease-out',
+                'fade-out': 'fade-out 0.5s ease-out',
+                'scale-in': 'scale-in 0.3s ease-out',
+                'slide-in-right': 'slide-in-right 0.5s ease-out',
+                'slide-in-left': 'slide-in-left 0.5s ease-out',
+                'pulse-soft': 'pulse-soft 3s infinite ease-in-out',
+                'float': 'float 6s infinite ease-in-out',
+                'typing': 'typing 1.5s steps(20, end)',
+			},
+            backgroundImage: {
+                'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+                'gradient-soft': 'linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%)',
+                'gradient-peach': 'linear-gradient(90deg, hsla(24, 100%, 83%, 1) 0%, hsla(341, 91%, 68%, 1) 100%)',
+                'gradient-mint': 'linear-gradient(90deg, hsla(139, 70%, 75%, 1) 0%, hsla(63, 90%, 76%, 1) 100%)',
+                'gradient-lavender': 'linear-gradient(90deg, hsla(277, 75%, 84%, 1) 0%, hsla(297, 50%, 51%, 1) 100%)',
+                'gradient-sky': 'linear-gradient(90deg, hsla(186, 33%, 94%, 1) 0%, hsla(216, 41%, 79%, 1) 100%)',
+            },
+            boxShadow: {
+                'soft': '0 2px 15px rgba(0, 0, 0, 0.06)',
+                'medium': '0 4px 20px rgba(0, 0, 0, 0.08)',
+                'inner-soft': 'inset 0 2px 10px rgba(0, 0, 0, 0.04)',
+            },
+            backdropBlur: {
+                'xs': '2px',
+            },
 		}
 	},
 	plugins: [require("tailwindcss-animate")],
