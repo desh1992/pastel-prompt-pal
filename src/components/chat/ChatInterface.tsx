@@ -1,9 +1,10 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { PlusCircle, Send, Trash2, MoreVertical, Robot, User, Copy } from 'lucide-react';
+import { PlusCircle, Send, Trash2, MoreVertical, Bot, User, Copy, MessageSquare } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -306,7 +307,7 @@ const ChatInterface = () => {
                 {messages.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-[70vh] text-center">
                     <div className="relative w-24 h-24 mb-6 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Robot className="h-12 w-12 text-primary animate-pulse-soft" />
+                      <Bot className="h-12 w-12 text-primary animate-pulse-soft" />
                     </div>
                     <h3 className="text-xl font-medium mb-2">How can I help you today?</h3>
                     <p className="text-muted-foreground max-w-md">
@@ -320,7 +321,7 @@ const ChatInterface = () => {
                         {message.sender === 'assistant' && (
                           <div className="mr-3 mt-1">
                             <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                              <Robot className="h-4 w-4 text-primary" />
+                              <Bot className="h-4 w-4 text-primary" />
                             </div>
                           </div>
                         )}
