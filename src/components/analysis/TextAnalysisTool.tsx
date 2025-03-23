@@ -1,11 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Brain, BrainCircuit, CircleDashed, BarChart3, Sparkles, FileText, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
+import { HighlightedTextInput, HighlightSegment } from '@/components/analysis/HighlightedTextInput';
 
 type MetricType = 'reasoning' | 'factual' | 'creativity' | 'conciseness' | 'relevance';
 
@@ -21,10 +22,14 @@ interface AnalysisMetric {
 const TextAnalysisTool = () => {
   const [inputText, setInputText] = useState('');
   const [instruction, setInstruction] = useState('');
+  const [instructionError, setInstructionError] = useState('');
   const [outputText, setOutputText] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [analysisComplete, setAnalysisComplete] = useState(false);
+  const [questionAsked, setQuestionAsked] = useState(false); // Track if instruction has been submitted
+  const [highlights, setHighlights] = useState<HighlightSegment[]>([]);
+
   const { toast } = useToast();
   
   const [metrics, setMetrics] = useState<AnalysisMetric[]>([
@@ -69,6 +74,21 @@ const TextAnalysisTool = () => {
       description: 'Pertinence to the topic or question',
     },
   ]);
+
+  const sampleSegments = inputText.split('. ').map((sentence, i) => ({
+    text: sentence + (i < inputText.length - 1 ? '. ' : ''),
+    metric: metrics[i % metrics.length].name, // Rotate
+  }));
+  
+  useEffect(() => {
+    if (analysisComplete && !questionAsked) {
+      const segments = inputText.split('. ').map((sentence, i) => ({
+        text: sentence + (i < inputText.length - 1 ? '. ' : ''),
+        metric: metrics[i % metrics.length].name, // rotate
+      }));
+      setHighlights(segments);
+    }
+  }, [analysisComplete, inputText, metrics, questionAsked]);
   
   const handleModelChange = (model: string, metricName: MetricType) => {
     setMetrics(prevMetrics => 
@@ -87,49 +107,81 @@ const TextAnalysisTool = () => {
       });
       return;
     }
+  
+    // 👇 If already analyzed and now submitting a question
+    if (analysisComplete && !questionAsked) {
+      if (!instruction.trim()) {
+        setInstructionError("Instruction is required.");
+        return;
+      }
+      setInstructionError('');
+      setQuestionAsked(true);
     
+      // Simulate LLM-enhanced response or replace with real API call
+      const refined = `Following instruction: "${instruction}", the text has been improved for clarity and relevance.`;
+    
+      setInputText(refined);
+      setOutputText(refined); // (optional) if you still use it elsewhere
+      setHighlights([]); // reset highlights
+    
+      handleSave(); // ✅ Auto save to history
+    
+      // Reset to allow a new analysis round
+      setInstruction('');
+      setAnalysisComplete(false);
+      setQuestionAsked(false);
+      toast({
+        title: "Instruction applied",
+        description: "Enhanced version saved. You can analyze again.",
+      });
+      return;
+    }
+    
+  
+    // 👇 Initial analysis
     setIsAnalyzing(true);
     setShowStats(false);
     setAnalysisComplete(false);
-    
-    // Simulate analysis process
+    setInstruction('');
+    setInstructionError('');
+    setQuestionAsked(false);
+  
     setTimeout(() => {
-      // Animation to show stats panel
-      setShowStats(true);
-      
-      // Simulate metrics calculation
       const updatedMetrics = metrics.map(metric => ({
         ...metric,
-        score: Math.floor(Math.random() * 41) + 60, // Random score between 60-100
+        score: Math.floor(Math.random() * 41) + 60,
       }));
-      
       setMetrics(updatedMetrics);
-      
-      // After metrics are shown, set output (simulate processing)
+      setShowStats(true);
+  
       setTimeout(() => {
-        setOutputText(inputText + "\n\n" + (instruction ? 
-          `Following the instruction to "${instruction}", here's the enhanced version:\n\n` : "") + 
-          "This is an AI-enhanced version of your text. The content has been refined for clarity, accuracy, and style based on the analysis.");
-        
+        setOutputText(
+          inputText +
+          "\n\nThis is an AI-enhanced version of your text. The content has been refined for clarity, accuracy, and style based on the analysis."
+        );
         setIsAnalyzing(false);
         setAnalysisComplete(true);
-        
+  
         toast({
           title: "Analysis complete",
-          description: "Your text has been analyzed and enhanced.",
+          description: "You can now ask a follow-up question.",
         });
       }, 1500);
     }, 2000);
   };
   
+  
   const handleReset = () => {
     setInputText('');
     setInstruction('');
+    setInstructionError('');
     setOutputText('');
     setShowStats(false);
     setAnalysisComplete(false);
+    setQuestionAsked(false);
     setMetrics(metrics.map(metric => ({ ...metric, score: 0 })));
   };
+  
   
   const handleSave = () => {
     // In a real app, this would save to your history or export the file
@@ -137,6 +189,12 @@ const TextAnalysisTool = () => {
       title: "Analysis saved",
       description: "Your analysis has been saved to history.",
     });
+
+    setInstruction('');
+    setInstructionError('');
+    setQuestionAsked(false);
+    setAnalysisComplete(false);
+    setHighlights([]); // clear highlights so re-analyze will generate fresh ones
   };
   
   return (
@@ -162,28 +220,30 @@ const TextAnalysisTool = () => {
                 Clear
               </Button>
             </div>
-            <Textarea
-              placeholder="Enter or paste your text here..."
-              className="min-h-[200px] p-4 resize-y text-base"
+            <HighlightedTextInput
               value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              disabled={isAnalyzing}
+              onChange={setInputText}
+              highlights={analysisComplete ? highlights : []}
+              disabled={isAnalyzing || questionAsked}
             />
-            
-            <div className="space-y-2">
-              <label htmlFor="instruction" className="text-sm font-medium">
-                Instruction (optional)
-              </label>
-              <Textarea
-                id="instruction"
-                placeholder="E.g., Make this more concise, Convert to professional tone, Fix grammar errors..."
-                className="resize-none h-20 text-base"
-                value={instruction}
-                onChange={(e) => setInstruction(e.target.value)}
-                disabled={isAnalyzing}
-              />
-            </div>
-            
+
+            {analysisComplete && !questionAsked && (
+              <div className="space-y-2">
+                <label htmlFor="instruction" className="text-sm font-medium">
+                  Instruction
+                </label>
+                <Textarea
+                  id="instruction"
+                  placeholder="E.g., Make this more concise, Convert to professional tone, Fix grammar errors..."
+                  className="resize-none h-20 text-base"
+                  value={instruction}
+                  onChange={(e) => setInstruction(e.target.value)}
+                  disabled={isAnalyzing}
+                />
+                {instructionError && <p className="text-red-500 text-sm mt-1">{instructionError}</p>}
+              </div>
+            )}
+
             <Button
               onClick={handleAnalyze}
               className="w-full btn-primary h-12"
@@ -197,33 +257,14 @@ const TextAnalysisTool = () => {
               ) : (
                 <>
                   <BrainCircuit className="mr-2 h-5 w-5" />
-                  Analyze Text
+                  {analysisComplete && !questionAsked ? "Ask Your Question" : "Analyze Text"}
                 </>
               )}
             </Button>
             
-            {analysisComplete && (
-              <div className="space-y-4 animate-fade-in">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-medium">Enhanced Result</h2>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleSave}
-                  >
-                    Save Result
-                  </Button>
-                </div>
-                <Textarea
-                  className="min-h-[200px] p-4 resize-y bg-secondary/20 text-base"
-                  value={outputText}
-                  readOnly
-                />
-              </div>
-            )}
           </div>
         </div>
-        
+
         <div className={`lg:col-span-1 transition-all duration-500 ${showStats ? 'translate-x-0 opacity-100' : 'translate-x-10 opacity-0'}`}>
           <div className="sticky top-24 rounded-2xl border p-6 bg-card shadow-soft">
             <h2 className="text-xl font-medium mb-6">Analysis Metrics</h2>

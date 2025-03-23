@@ -8,11 +8,12 @@ import { useToast } from '@/hooks/use-toast';
 
 const SignupForm = () => {
   const [formData, setFormData] = useState({
+    userName: '',
     email: '',
     companyName: '',
     password: '',
     confirmPassword: '',
-  });
+  });  
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -22,6 +23,10 @@ const SignupForm = () => {
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
+    
+    if (!formData.userName.trim()) {
+      newErrors.userName = 'User name is required';
+    }
     
     if (!formData.email) {
       newErrors.email = 'Email is required';
@@ -67,21 +72,51 @@ const SignupForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+  
     if (!validateForm()) return;
-    
+  
     setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      toast({
-        title: "Account created successfully!",
-        description: "Please log in with your new account.",
+  
+    try {
+      const response = await fetch('https://prompt-pal-backend-c44b4d13347a.herokuapp.com/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.userName,
+          email: formData.email,
+          company_name: formData.companyName,
+          password: formData.password,
+        }),
       });
-      navigate('/login');
+  
+      const data = await response.json();
+  
+      if (response.ok) {
+        toast({
+          title: "Account created successfully!",
+          description: "Please log in with your new account.",
+        });
+        navigate('/login');
+      } else {
+        toast({
+          title: "Signup failed",
+          description: data?.detail || "An unexpected error occurred.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Network error",
+        description: "Unable to connect to the server. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
+  
 
   const renderPasswordStrength = () => {
     if (!formData.password) return null;
@@ -139,6 +174,27 @@ const SignupForm = () => {
 
   return (
     <form onSubmit={handleSubmit} className="animate-fade-in space-y-5 w-full max-w-md">
+      <div className="space-y-2">
+        <label htmlFor="userName" className="text-sm font-medium">
+          User Name
+        </label>
+        <Input
+          id="userName"
+          name="userName"
+          type="text"
+          value={formData.userName}
+          onChange={handleChange}
+          placeholder="Your Name"
+          className={`input-primary w-full h-12 ${
+            errors.userName ? 'border-red-300 focus-visible:ring-red-500' : ''
+          }`}
+          autoComplete="username"
+        />
+        {errors.userName && (
+          <p className="text-red-500 text-sm animate-fade-in">{errors.userName}</p>
+        )}
+      </div>
+
       <div className="space-y-2">
         <label htmlFor="email" className="text-sm font-medium">
           Email

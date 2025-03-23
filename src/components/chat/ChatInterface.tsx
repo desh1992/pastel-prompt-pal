@@ -242,46 +242,50 @@ const ChatInterface = () => {
           <div className="px-2 py-2">
             <h2 className="px-2 mb-2 text-sm font-medium text-muted-foreground">Recent Conversations</h2>
             {conversations.map(conversation => (
-              <button
-                key={conversation.id}
-                className={`w-full text-left px-3 py-2 text-sm rounded-lg mb-1 transition-colors flex justify-between items-center group ${
-                  conversation.id === activeConversationId
-                    ? 'bg-primary/10 text-primary font-medium'
-                    : 'hover:bg-muted text-foreground'
-                }`}
-                onClick={() => {
-                  setActiveConversationId(conversation.id);
-                  setIsMobileMenuOpen(false);
-                }}
-              >
-                <div className="flex-1 truncate">
-                  <div className="truncate">{conversation.title}</div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    {formatDate(conversation.updatedAt)}
-                  </div>
+              <div
+              key={conversation.id}
+              role="button"
+              tabIndex={0}
+              className={`w-full text-left px-3 py-2 text-sm rounded-lg mb-1 transition-colors flex justify-between items-center group ${
+                conversation.id === activeConversationId
+                  ? 'bg-primary/10 text-primary font-medium'
+                  : 'hover:bg-muted text-foreground'
+              }`}
+              onClick={() => {
+                setActiveConversationId(conversation.id);
+                setIsMobileMenuOpen(false);
+              }}
+            >
+              <div className="flex-1 truncate">
+                <div className="truncate">{conversation.title}</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {formatDate(conversation.updatedAt)}
                 </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem 
-                      onClick={(e) => handleDeleteConversation(conversation.id, e as React.MouseEvent)}
-                      className="text-red-500 focus:text-red-500"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete conversation
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </button>
+              </div>
+            
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem 
+                    onClick={(e) => handleDeleteConversation(conversation.id, e as React.MouseEvent)}
+                    className="text-red-500 focus:text-red-500"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete conversation
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+            
             ))}
           </div>
         </ScrollArea>

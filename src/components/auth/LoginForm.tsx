@@ -48,22 +48,55 @@ const LoginForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+  
     if (!validateForm()) return;
-    
+  
     setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      // For demo purposes, just navigate to home
-      toast({
-        title: "Login successful",
-        description: "Welcome back!",
+  
+    try {
+      const response = await fetch('https://prompt-pal-backend-c44b4d13347a.herokuapp.com/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
       });
-      navigate('/home');
+  
+      const data = await response.json();
+  
+      if (response.ok) {
+        // ✅ Save access_token in localStorage
+        localStorage.setItem('access_token', data.access_token);
+        localStorage.setItem('user_name', data.name);
+        localStorage.setItem('user_email', data.email);
+  
+        toast({
+          title: "Login successful",
+          description: `Welcome back, ${data.name}!`,
+        });
+  
+        navigate('/home');
+      } else {
+        toast({
+          title: "Login failed",
+          description: data.detail || "Invalid login credentials",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Network error",
+        description: "Unable to connect to the server. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
+  
 
   return (
     <form onSubmit={handleSubmit} className="animate-fade-in space-y-5 w-full max-w-md">
@@ -122,22 +155,6 @@ const LoginForm = () => {
         {errors.password && (
           <p className="text-red-500 text-sm animate-fade-in">{errors.password}</p>
         )}
-      </div>
-
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <input
-            type="checkbox"
-            id="remember"
-            className="rounded border-gray-300 text-primary focus:ring-primary"
-          />
-          <label htmlFor="remember" className="text-sm text-muted-foreground">
-            Remember me
-          </label>
-        </div>
-        <a href="#" className="text-sm font-medium text-primary hover:underline">
-          Forgot password?
-        </a>
       </div>
 
       <Button 

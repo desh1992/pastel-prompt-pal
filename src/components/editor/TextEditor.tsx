@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -225,15 +224,20 @@ const TextEditor = () => {
                   Editing Instructions
                 </label>
                 <Tabs value={selectedPrompt} onValueChange={setSelectedPrompt}>
-                  <TabsList className="grid grid-cols-5 mb-2">
-                    {promptTemplates.map(template => (
-                      <TabsTrigger key={template.id} value={template.id} className="text-xs">
-                        {template.name}
-                      </TabsTrigger>
-                    ))}
-                    <TabsTrigger value="custom" className="text-xs">Custom</TabsTrigger>
-                  </TabsList>
-                  
+                <TabsList 
+                  className="flex flex-wrap w-full gap-2 justify-start p-2 rounded-md bg-muted/50 min-h-[auto] mb-4"
+                  style={{alignItems: 'flex-start' }}
+                >
+                  {[...promptTemplates, { id: 'custom', name: 'Custom', prompt: '' }].map(template => (
+                    <TabsTrigger
+                      key={template.id}
+                      value={template.id}
+                      className="text-xs px-3 py-1 rounded whitespace-nowrap bg-white"
+                    >
+                      {template.name}
+                    </TabsTrigger>                  
+                  ))}
+                </TabsList>
                   {promptTemplates.map(template => (
                     <TabsContent key={template.id} value={template.id} className="mt-0">
                       <p className="text-sm text-muted-foreground italic border-l-2 border-primary/20 pl-3 py-1">

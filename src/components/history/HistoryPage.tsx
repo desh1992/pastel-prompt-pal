@@ -312,16 +312,16 @@ const HistoryContent = ({ items, formatDate, getTypeIcon, onDelete, onClearAll, 
                     <div className="flex items-center">
                       <ChevronDown className="h-4 w-4 text-muted-foreground" />
                       <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8 ml-2"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
+                      <DropdownMenuTrigger asChild>
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          className="h-8 w-8 ml-2 flex items-center justify-center rounded-md hover:bg-muted transition-colors"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </div>
+                      </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-[160px]">
                           <DropdownMenuItem>View details</DropdownMenuItem>
                           <DropdownMenuItem>Export</DropdownMenuItem>
