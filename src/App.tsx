@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,6 +12,7 @@ import Editor from "./pages/Editor";
 import Profile from "./pages/Profile";
 import History from "./pages/History";
 import NotFound from "./pages/NotFound";
+import PrivateRoute from "./components/auth/PrivateRoute"; // 👈 import the new component
 
 const queryClient = new QueryClient();
 
@@ -28,13 +28,13 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           
-          {/* Protected routes (in a real app, these would have auth protection) */}
-          <Route path="/home" element={<Home />} />
-          <Route path="/analysis" element={<Analysis />} />
-          <Route path="/chat" element={<Chat />} />
-          <Route path="/editor" element={<Editor />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/history" element={<History />} />
+          {/* Protected routes */}
+          <Route path="/home" element={<PrivateRoute><Home /></PrivateRoute>} />
+          <Route path="/analysis" element={<PrivateRoute><Analysis /></PrivateRoute>} />
+          <Route path="/chat" element={<PrivateRoute><Chat /></PrivateRoute>} />
+          <Route path="/editor" element={<PrivateRoute><Editor /></PrivateRoute>} />
+          <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+          <Route path="/history" element={<PrivateRoute><History /></PrivateRoute>} />
           
           {/* Catch-all route */}
           <Route path="*" element={<NotFound />} />

@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { saveUser } from '@/services/userService';
 
 const LoginForm = () => {
   const [formData, setFormData] = useState({
@@ -68,16 +69,18 @@ const LoginForm = () => {
       const data = await response.json();
   
       if (response.ok) {
-        // ✅ Save access_token in localStorage
-        localStorage.setItem('access_token', data.access_token);
-        localStorage.setItem('user_name', data.name);
-        localStorage.setItem('user_email', data.email);
-  
+        saveUser({
+          name: data.name,
+          email: data.email,
+          companyName: data.company_name,
+          accessToken: data.access_token,
+        });
+      
         toast({
           title: "Login successful",
           description: `Welcome back, ${data.name}!`,
         });
-  
+      
         navigate('/home');
       } else {
         toast({

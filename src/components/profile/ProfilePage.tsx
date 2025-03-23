@@ -8,18 +8,20 @@ import { User, LogOut, Mail, Building, Camera, Loader2, Shield } from 'lucide-re
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useNavigate } from 'react-router-dom';
+import { getUser, logoutUser } from '@/services/userService';
 
 const ProfilePage = () => {
+  const storedUser = getUser();
   const [userProfile, setUserProfile] = useState({
-    email: 'user@example.com',
-    companyName: 'Example Corp',
+    email: storedUser?.email || '',
+    companyName: storedUser?.companyName || '',
     avatarUrl: '',
   });
   
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
-  
+
   const handleUpdateProfile = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -30,7 +32,7 @@ const ProfilePage = () => {
   };
   
   const handleLogout = () => {
-    // In a real app, this would clear auth state
+    logoutUser();
     navigate('/login');
   };
   
