@@ -6,6 +6,16 @@ import { PenLine, CircleDashed, Save, ArrowLeft, ArrowRight, Undo, Download } fr
 import { useToast } from '@/hooks/use-toast';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { userService } from '@/services/userService';
+import ReactMarkdown from 'react-markdown';
+
+
+const MODEL_MAP: Record<string, string> = {
+  'gpt-4o': 'chatgpt',
+  'gpt-4o-mini': 'chatgpt',
+  'claude-3': 'claude',
+  'llama-3': 'llama',
+};
 
 const models = [
   { id: 'gpt-4o', name: 'GPT-4o', description: 'Most capable model for complex tasks' },
@@ -34,7 +44,7 @@ const TextEditor = () => {
   
   const { toast } = useToast();
   
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (!inputText.trim()) {
       toast({
         title: "Empty text",
@@ -43,40 +53,96 @@ const TextEditor = () => {
       });
       return;
     }
-    
+  
+    const user = userService.getUser();
+  
     setIsProcessing(true);
+  
+    const promptText =
+      selectedPrompt === 'custom'
+        ? customPrompt
+        : promptTemplates.find((p) => p.id === selectedPrompt)?.prompt || '';
+  
+    const mappedModel = MODEL_MAP[selectedModel] || 'chatgpt';
+  
+    console.log("Sending request:", {
+      userId: user.userId,
+      user_message: inputText,
+      instruction: promptText,
+      model: mappedModel,
+    }); 
+
+    console.log("user id -> ", localStorage.getItem('user_id'));
     
-    // Get the active prompt
-    const promptText = selectedPrompt === 'custom' 
-      ? customPrompt 
-      : promptTemplates.find(p => p.id === selectedPrompt)?.prompt || '';
-    
-    // Simulate processing
-    setTimeout(() => {
-      // For demo, just modify the text
-      const newOutput = `${inputText}\n\n[Edited with ${models.find(m => m.id === selectedModel)?.name || selectedModel}]\n\n` + 
-        "This is an AI-enhanced version of your text based on the prompt. The content has been refined to follow your specific instructions while maintaining your original meaning.";
-      
-      setOutputText(newOutput);
-      setIsProcessing(false);
-      
-      // Add to history
-      const newHistoryEntry = {
-        input: inputText,
-        output: newOutput,
-        prompt: promptText,
-        model: selectedModel
-      };
-      
-      setHistory(prev => [newHistoryEntry, ...prev]);
-      setHistoryIndex(-1);
-      
+    if (!user?.userId || !inputText.trim() || !promptText.trim() || !mappedModel) {
       toast({
-        title: "Text generated",
-        description: `Generated using ${models.find(m => m.id === selectedModel)?.name}`,
+        title: "Missing required fields",
+        description: "Please ensure all fields are filled correctly.",
+        variant: "destructive",
       });
-    }, 2000);
+      setIsProcessing(false);
+      return;
+    }
+
+    try {
+      const response = await fetch('https://prompt-pal-backend-c44b4d13347a.herokuapp.com/api/modelprompt/modelPrompt', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.userId,
+          user_message: inputText,
+          instruction: promptText,
+          model: mappedModel,
+        }),
+      });
+  
+      const data = await response.json();
+  
+      if (typeof data.response !== 'string') {
+        throw new Error("Invalid response format");
+      }
+
+      if (response.ok) {
+        const newOutput = data.response || 'AI response unavailable.';
+  
+        setOutputText(newOutput);
+  
+        // Save history
+        setHistory((prev) => [
+          {
+            input: inputText,
+            output: newOutput,
+            prompt: promptText,
+            model: selectedModel,
+          },
+          ...prev,
+        ]);
+        setHistoryIndex(-1);
+  
+        toast({
+          title: "Text generated",
+          description: `Generated using ${models.find((m) => m.id === selectedModel)?.name}`,
+        });
+      } else {
+        toast({
+          title: "Generation failed",
+          description: data.detail || 'Something went wrong',
+          variant: 'destructive',
+        });
+      }
+    } catch (err) {
+      toast({
+        title: "Network error",
+        description: "Could not reach the server",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
+  
   
   const handleSave = () => {
     // In a real app, this would save to your history or export the file
@@ -306,7 +372,9 @@ const TextEditor = () => {
             </div>
             
             <div className={`min-h-[300px] rounded-md border border-input bg-transparent p-4 ${outputText ? 'text-base' : 'text-muted-foreground text-sm italic'}`}>
-              {outputText || "Generated text will appear here..."}
+              {typeof outputText === 'string'
+                ? outputText
+                : "Generated text will appear here..."}
             </div>
             
             <div className="flex space-x-4 text-sm">

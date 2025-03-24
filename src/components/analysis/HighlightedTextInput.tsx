@@ -3,6 +3,7 @@ import React, { useRef, useEffect } from 'react';
 export interface HighlightSegment {
   text: string;
   metric: string; // e.g., 'reasoning', 'factual'
+  model: string;
 }
 
 interface HighlightedTextInputProps {
@@ -54,9 +55,13 @@ export const HighlightedTextInput: React.FC<HighlightedTextInputProps> = ({
         {highlights.length === 0
           ? value
           : highlights.map((seg, idx) => (
-              <span key={idx} className={`${metricColorMap[seg.metric]} rounded px-1`}>
+            <span
+                key={idx}
+                className={`${metricColorMap[seg.metric]} rounded px-1`}
+                title={`Metric: ${seg.metric}, Model: ${seg.model}`}
+            >
                 {seg.text}
-              </span>
+            </span>
             ))}
       </div>
 

@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import { saveUser } from '@/services/userService';
+import { userService } from '@/services/userService';
 
 const LoginForm = () => {
   const [formData, setFormData] = useState({
@@ -69,12 +69,7 @@ const LoginForm = () => {
       const data = await response.json();
   
       if (response.ok) {
-        saveUser({
-          name: data.name,
-          email: data.email,
-          companyName: data.company_name,
-          accessToken: data.access_token,
-        });
+        userService.setUser(data); // ✅ just pass the raw response
       
         toast({
           title: "Login successful",

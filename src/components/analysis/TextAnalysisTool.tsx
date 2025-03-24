@@ -7,6 +7,7 @@ import { Brain, BrainCircuit, CircleDashed, BarChart3, Sparkles, FileText, Check
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { HighlightedTextInput, HighlightSegment } from '@/components/analysis/HighlightedTextInput';
+import { userService } from '@/services/userService';
 
 type MetricType = 'reasoning' | 'factual' | 'creativity' | 'conciseness' | 'relevance';
 
@@ -29,8 +30,22 @@ const TextAnalysisTool = () => {
   const [analysisComplete, setAnalysisComplete] = useState(false);
   const [questionAsked, setQuestionAsked] = useState(false); // Track if instruction has been submitted
   const [highlights, setHighlights] = useState<HighlightSegment[]>([]);
+  const [isEnhancing, setIsEnhancing] = useState(false);
 
   const { toast } = useToast();
+
+  const MODEL_MAP: Record<string, string> = {
+    'gpt-4o': 'gpt-4o',
+    'gpt-4o-mini': 'gpt-4o-mini',
+    'gpt-4': 'gpt-4o',
+    'claude-3-haiku': 'claude',
+    'claude-3': 'claude',
+    'gemini-2.0-flash': 'gemini',
+    'llama3.1-70b': 'llama',
+  };
+  
+  const normalizeModelName = (modelId: string): string =>
+    MODEL_MAP[modelId] || modelId; 
   
   const [metrics, setMetrics] = useState<AnalysisMetric[]>([
     {
@@ -86,7 +101,7 @@ const TextAnalysisTool = () => {
         text: sentence + (i < inputText.length - 1 ? '. ' : ''),
         metric: metrics[i % metrics.length].name, // rotate
       }));
-      setHighlights(segments);
+      // setHighlights(segments);
     }
   }, [analysisComplete, inputText, metrics, questionAsked]);
   
@@ -98,7 +113,7 @@ const TextAnalysisTool = () => {
     );
   };
   
-  const handleAnalyze = () => {
+  const handleAnalyze = async () => {
     if (!inputText.trim()) {
       toast({
         title: "Empty text",
@@ -108,37 +123,70 @@ const TextAnalysisTool = () => {
       return;
     }
   
-    // 👇 If already analyzed and now submitting a question
+    const user = userService.getUser();
+  
+    // 🟣 If follow-up instruction
     if (analysisComplete && !questionAsked) {
       if (!instruction.trim()) {
         setInstructionError("Instruction is required.");
         return;
       }
+  
       setInstructionError('');
       setQuestionAsked(true);
-    
-      // Simulate LLM-enhanced response or replace with real API call
-      const refined = `Following instruction: "${instruction}", the text has been improved for clarity and relevance.`;
-    
-      setInputText(refined);
-      setOutputText(refined); // (optional) if you still use it elsewhere
-      setHighlights([]); // reset highlights
-    
-      handleSave(); // ✅ Auto save to history
-    
-      // Reset to allow a new analysis round
-      setInstruction('');
-      setAnalysisComplete(false);
-      setQuestionAsked(false);
-      toast({
-        title: "Instruction applied",
-        description: "Enhanced version saved. You can analyze again.",
+      setIsEnhancing(true);
+  
+      const segmentsPayload = highlights.map(h => {
+        const rawModel = metrics.find(m => m.name === h.metric)?.model || 'gpt-4o';
+        return {
+          text: h.text,
+          type: h.metric,
+          model: normalizeModelName(rawModel),
+        };
       });
+  
+      try {
+        const res = await fetch("https://prompt-pal-backend-c44b4d13347a.herokuapp.com/api/enhancing/enhanceText", {
+          method: 'POST',
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: user.userId,
+            fullText: inputText,
+            instruction,
+            segments: segmentsPayload,
+          }),
+        });
+  
+        const data = await res.json();
+        setInputText(data.enhancedText);
+        setOutputText(data.enhancedText);
+        setHighlights([]);
+        handleSave();
+  
+        setInstruction('');
+        setAnalysisComplete(false);
+        setQuestionAsked(false);
+  
+        toast({
+          title: "Instruction applied",
+          description: "Enhanced version saved.",
+        });
+
+        setIsEnhancing(false);
+      } catch (error) {
+        toast({
+          title: "Error enhancing",
+          description: "Something went wrong during enhancement.",
+          variant: "destructive",
+        });
+        
+        setIsEnhancing(false);
+      }
+  
       return;
     }
-    
   
-    // 👇 Initial analysis
+    // 🟡 Initial analysis
     setIsAnalyzing(true);
     setShowStats(false);
     setAnalysisComplete(false);
@@ -146,28 +194,53 @@ const TextAnalysisTool = () => {
     setInstructionError('');
     setQuestionAsked(false);
   
-    setTimeout(() => {
-      const updatedMetrics = metrics.map(metric => ({
-        ...metric,
-        score: Math.floor(Math.random() * 41) + 60,
+    try {
+      const res = await fetch("https://prompt-pal-backend-c44b4d13347a.herokuapp.com/api/analyzing/analyzeText", {
+        method: 'POST',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.userId,
+          text: inputText,
+        }),
+      });
+  
+      const data = await res.json();
+  
+      const updatedMetrics = metrics.map(m => ({
+        ...m,
+        score: data.percentages[m.name] || 0,
+        model: data.models[m.name] || m.model,
       }));
+  
+      const segments: HighlightSegment[] = data.analysis.map((seg: any) => ({
+        text: seg.text,
+        metric: seg.type,
+        model: data.models[seg.type] || 'gpt-4o' // assign model based on type
+      }));
+
+      setHighlights(segments);
+  
       setMetrics(updatedMetrics);
+      setHighlights(segments);
       setShowStats(true);
   
       setTimeout(() => {
-        setOutputText(
-          inputText +
-          "\n\nThis is an AI-enhanced version of your text. The content has been refined for clarity, accuracy, and style based on the analysis."
-        );
         setIsAnalyzing(false);
         setAnalysisComplete(true);
-  
         toast({
           title: "Analysis complete",
-          description: "You can now ask a follow-up question.",
+          description: "Ask a follow-up question now.",
         });
-      }, 1500);
-    }, 2000);
+      }, 1200);
+  
+    } catch (error) {
+      toast({
+        title: "Analysis failed",
+        description: "Could not analyze your text. Try again.",
+        variant: "destructive",
+      });
+      setIsAnalyzing(false);
+    }
   };
   
   
@@ -197,6 +270,28 @@ const TextAnalysisTool = () => {
     setHighlights([]); // clear highlights so re-analyze will generate fresh ones
   };
   
+  if (isAnalyzing) {
+    return (
+      <div className="flex justify-center items-center h-[300px] animate-fade-in">
+        <div className="flex flex-col items-center gap-3 text-muted-foreground">
+          <CircleDashed className="h-8 w-8 animate-spin" />
+          <p className="text-base">Analyzing your text...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (isEnhancing) {
+    return (
+      <div className="flex justify-center items-center h-[300px] animate-fade-in">
+        <div className="flex flex-col items-center gap-3 text-muted-foreground">
+          <CircleDashed className="h-8 w-8 animate-spin" />
+          <p className="text-base">Enhancing your text...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container max-w-6xl px-4 py-8 mx-auto animate-fade-in">
       <section className="mb-8 text-center">
@@ -293,7 +388,7 @@ const TextAnalysisTool = () => {
                   <div className="flex justify-between items-center text-sm pt-1">
                     <span className="text-xs font-medium">Recommended model:</span>
                     <Select
-                      value={metric.model}
+                      value={normalizeModelName(metric.model)} // ✅ Normalize the model here
                       onValueChange={(value) => handleModelChange(value, metric.name)}
                       disabled={isAnalyzing}
                     >
@@ -303,8 +398,9 @@ const TextAnalysisTool = () => {
                       <SelectContent>
                         <SelectItem value="gpt-4o">GPT-4o</SelectItem>
                         <SelectItem value="gpt-4o-mini">GPT-4o Mini</SelectItem>
-                        <SelectItem value="claude-3">Claude 3</SelectItem>
-                        <SelectItem value="llama-3">Llama 3</SelectItem>
+                        <SelectItem value="claude">Claude 3</SelectItem>
+                        <SelectItem value="gemini">Gemini 2.0</SelectItem>
+                        <SelectItem value="llama">Llama 3</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
