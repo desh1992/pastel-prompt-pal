@@ -12,7 +12,10 @@ const Login = () => {
           </h1>
           <p className="text-muted-foreground">
             Sign in to continue to Prompt Pal
-            <span className="block text-xs mt-1">Powered by Cyquent AI</span>
+            <span className="flex items-center justify-center gap-1 text-xs mt-1">
+              <img src="/src/assets/cyquent-logo.png" alt="Cyquent" className="h-4 w-auto" />
+              Product of Cyquent Inc
+            </span>
           </p>
         </div>
         

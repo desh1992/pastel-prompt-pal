@@ -29,7 +29,6 @@ const Header = () => {
             className="flex items-center gap-2 text-xl font-semibold tracking-tight hover:opacity-90 transition-opacity"
           >
             <span className="text-gradient">Prompt Pal</span>
-            {/* <span className="text-xs ml-2 text-muted-foreground">Powered by Cyquent AI</span> */}
           </Link>
         </div>
         

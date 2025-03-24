@@ -41,7 +41,10 @@ const Dashboard = () => {
       <section className="mb-12 text-center">
         <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight text-gradient">
           Welcome to Prompt Pal
-          <span className="block text-sm font-normal mt-1">Powered by Cyquent AI</span>
+          <span className="flex items-center justify-center gap-1 text-sm font-normal mt-1">
+            <img src="/src/assets/cyquent-logo.png" alt="Cyquent" className="h-5 w-auto" />
+            Product of Cyquent Inc
+          </span>
         </h1>
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
           Your AI companion for text analysis, chat assistance, and content creation
