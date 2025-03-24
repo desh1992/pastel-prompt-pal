@@ -13,7 +13,7 @@ const Signup = () => {
           <p className="text-muted-foreground">
             Join Prompt Pal and explore AI-powered tools
             <span className="flex items-center justify-center gap-1 text-xs mt-1">
-              <img src="/public/cyquent-logo.png" alt="Cyquent" className="h-4 w-auto" />
+              <img src="/cyquent-logo.png" alt="Cyquent" className="h-4 w-auto" />
               Product of Cyquent Inc
             </span>
           </p>
