@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import SignupForm from '@/components/auth/SignupForm';
@@ -13,6 +12,7 @@ const Signup = () => {
           </h1>
           <p className="text-muted-foreground">
             Join Prompt Pal and explore AI-powered tools
+            <span className="block text-xs mt-1">Powered by Cyquent AI</span>
           </p>
         </div>
         

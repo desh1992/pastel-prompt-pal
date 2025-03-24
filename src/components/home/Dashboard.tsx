@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -42,6 +41,7 @@ const Dashboard = () => {
       <section className="mb-12 text-center">
         <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight text-gradient">
           Welcome to Prompt Pal
+          <span className="block text-sm font-normal mt-1">Powered by Cyquent AI</span>
         </h1>
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
           Your AI companion for text analysis, chat assistance, and content creation
