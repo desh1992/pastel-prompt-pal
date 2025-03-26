@@ -7,8 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { userService } from '@/services/userService';
-import ReactMarkdown from 'react-markdown';
-
+import { apiFetch } from '@/services/apiClient';
 
 const MODEL_MAP: Record<string, string> = {
   'gpt-4o': 'chatgpt',
@@ -41,9 +40,9 @@ const TextEditor = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [history, setHistory] = useState<{input: string, output: string, prompt: string, model: string}[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
-  
+
   const { toast } = useToast();
-  
+
   const handleGenerate = async () => {
     if (!inputText.trim()) {
       toast({
@@ -53,27 +52,18 @@ const TextEditor = () => {
       });
       return;
     }
-  
+
     const user = userService.getUser();
-  
+
     setIsProcessing(true);
-  
+
     const promptText =
       selectedPrompt === 'custom'
         ? customPrompt
         : promptTemplates.find((p) => p.id === selectedPrompt)?.prompt || '';
-  
-    const mappedModel = MODEL_MAP[selectedModel] || 'chatgpt';
-  
-    console.log("Sending request:", {
-      userId: user.userId,
-      user_message: inputText,
-      instruction: promptText,
-      model: mappedModel,
-    }); 
 
-    console.log("user id -> ", localStorage.getItem('user_id'));
-    
+    const mappedModel = MODEL_MAP[selectedModel] || 'chatgpt';
+
     if (!user?.userId || !inputText.trim() || !promptText.trim() || !mappedModel) {
       toast({
         title: "Missing required fields",
@@ -85,112 +75,94 @@ const TextEditor = () => {
     }
 
     try {
-      const response = await fetch('https://prompt-pal-backend-c44b4d13347a.herokuapp.com/api/modelprompt/modelPrompt', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: user.userId,
-          user_message: inputText,
-          instruction: promptText,
-          model: mappedModel,
-        }),
-      });
-  
-      const data = await response.json();
-  
+      const data = await apiFetch<{ response: string }>(
+        '/modelprompt/modelPrompt',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            userId: user.userId,
+            user_message: inputText,
+            instruction: promptText,
+            model: mappedModel,
+          }),
+        }
+      );
+
       if (typeof data.response !== 'string') {
         throw new Error("Invalid response format");
       }
 
-      if (response.ok) {
-        const newOutput = data.response || 'AI response unavailable.';
-  
-        setOutputText(newOutput);
-  
-        // Save history
-        setHistory((prev) => [
-          {
-            input: inputText,
-            output: newOutput,
-            prompt: promptText,
-            model: selectedModel,
-          },
-          ...prev,
-        ]);
-        setHistoryIndex(-1);
-  
-        toast({
-          title: "Text generated",
-          description: `Generated using ${models.find((m) => m.id === selectedModel)?.name}`,
-        });
-      } else {
-        toast({
-          title: "Generation failed",
-          description: data.detail || 'Something went wrong',
-          variant: 'destructive',
-        });
-      }
-    } catch (err) {
+      const newOutput = data.response || 'AI response unavailable.';
+      setOutputText(newOutput);
+
+      setHistory((prev) => [
+        {
+          input: inputText,
+          output: newOutput,
+          prompt: promptText,
+          model: selectedModel,
+        },
+        ...prev,
+      ]);
+      setHistoryIndex(-1);
+
       toast({
-        title: "Network error",
-        description: "Could not reach the server",
+        title: "Text generated",
+        description: `Generated using ${models.find((m) => m.id === selectedModel)?.name}`,
+      });
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err.message || "Could not reach the server",
         variant: "destructive",
       });
     } finally {
       setIsProcessing(false);
     }
   };
-  
-  
+
   const handleSave = () => {
-    // In a real app, this would save to your history or export the file
     toast({
       title: "Document saved",
       description: "Your document has been saved to history.",
     });
   };
-  
+
   const handleExport = () => {
-    // Create a download link
     const element = document.createElement('a');
-    const file = new Blob([outputText], {type: 'text/plain'});
+    const file = new Blob([outputText], { type: 'text/plain' });
     element.href = URL.createObjectURL(file);
     element.download = `generated-text-${new Date().toISOString().slice(0, 10)}.txt`;
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
-    
+
     toast({
       title: "Document exported",
       description: "Your document has been exported as a text file.",
     });
   };
-  
+
   const navigateHistory = (direction: 'prev' | 'next') => {
     if (history.length === 0) return;
-    
+
     let newIndex;
     if (direction === 'prev') {
       newIndex = historyIndex === -1 ? 0 : Math.min(historyIndex + 1, history.length - 1);
     } else {
       newIndex = Math.max(historyIndex - 1, -1);
     }
-    
+
     setHistoryIndex(newIndex);
-    
+
     if (newIndex === -1) {
-      // Reset to current state
       setInputText('');
       setOutputText('');
     } else {
-      // Load from history
       const historyItem = history[newIndex];
       setInputText(historyItem.input);
       setOutputText(historyItem.output);
-      
-      // Find the prompt template or set as custom
+
       const matchingPrompt = promptTemplates.find(p => p.prompt === historyItem.prompt);
       if (matchingPrompt) {
         setSelectedPrompt(matchingPrompt.id);
@@ -199,11 +171,11 @@ const TextEditor = () => {
         setSelectedPrompt('custom');
         setCustomPrompt(historyItem.prompt);
       }
-      
+
       setSelectedModel(historyItem.model);
     }
   };
-  
+
   return (
     <div className="container max-w-6xl px-4 py-8 mx-auto animate-fade-in">
       <section className="mb-8 text-center">

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -8,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { HighlightedTextInput, HighlightSegment } from '@/components/analysis/HighlightedTextInput';
 import { userService } from '@/services/userService';
+import { apiFetch } from '@/services/apiClient'; // ✅ Import interceptor-based client
 
 type MetricType = 'reasoning' | 'factual' | 'creativity' | 'conciseness' | 'relevance';
 
@@ -28,7 +28,7 @@ const TextAnalysisTool = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [analysisComplete, setAnalysisComplete] = useState(false);
-  const [questionAsked, setQuestionAsked] = useState(false); // Track if instruction has been submitted
+  const [questionAsked, setQuestionAsked] = useState(false);
   const [highlights, setHighlights] = useState<HighlightSegment[]>([]);
   const [isEnhancing, setIsEnhancing] = useState(false);
 
@@ -43,76 +43,35 @@ const TextAnalysisTool = () => {
     'gemini-2.0-flash': 'gemini',
     'llama3.1-70b': 'llama',
   };
-  
+
   const normalizeModelName = (modelId: string): string =>
-    MODEL_MAP[modelId] || modelId; 
-  
+    MODEL_MAP[modelId] || modelId;
+
   const [metrics, setMetrics] = useState<AnalysisMetric[]>([
-    {
-      name: 'reasoning',
-      score: 0,
-      model: 'gpt-4o',
-      color: 'from-blue-500 to-cyan-400',
-      icon: Brain,
-      description: 'Logical coherence and structured thinking',
-    },
-    {
-      name: 'factual',
-      score: 0,
-      model: 'gpt-4o-mini',
-      color: 'from-green-500 to-emerald-400',
-      icon: Check,
-      description: 'Accuracy and correctness of information',
-    },
-    {
-      name: 'creativity',
-      score: 0,
-      model: 'claude-3',
-      color: 'from-purple-500 to-pink-400',
-      icon: Sparkles,
-      description: 'Originality and innovative thinking',
-    },
-    {
-      name: 'conciseness',
-      score: 0,
-      model: 'gpt-4o-mini',
-      color: 'from-yellow-500 to-amber-400',
-      icon: FileText,
-      description: 'Brevity and clarity of expression',
-    },
-    {
-      name: 'relevance',
-      score: 0,
-      model: 'gpt-4o',
-      color: 'from-red-500 to-rose-400',
-      icon: BarChart3,
-      description: 'Pertinence to the topic or question',
-    },
+    { name: 'reasoning', score: 0, model: 'gpt-4o', color: 'from-blue-500 to-cyan-400', icon: Brain, description: 'Logical coherence and structured thinking' },
+    { name: 'factual', score: 0, model: 'gpt-4o-mini', color: 'from-green-500 to-emerald-400', icon: Check, description: 'Accuracy and correctness of information' },
+    { name: 'creativity', score: 0, model: 'claude-3', color: 'from-purple-500 to-pink-400', icon: Sparkles, description: 'Originality and innovative thinking' },
+    { name: 'conciseness', score: 0, model: 'gpt-4o-mini', color: 'from-yellow-500 to-amber-400', icon: FileText, description: 'Brevity and clarity of expression' },
+    { name: 'relevance', score: 0, model: 'gpt-4o', color: 'from-red-500 to-rose-400', icon: BarChart3, description: 'Pertinence to the topic or question' },
   ]);
 
-  const sampleSegments = inputText.split('. ').map((sentence, i) => ({
-    text: sentence + (i < inputText.length - 1 ? '. ' : ''),
-    metric: metrics[i % metrics.length].name, // Rotate
-  }));
-  
   useEffect(() => {
     if (analysisComplete && !questionAsked) {
       const segments = inputText.split('. ').map((sentence, i) => ({
         text: sentence + (i < inputText.length - 1 ? '. ' : ''),
-        metric: metrics[i % metrics.length].name, // rotate
+        metric: metrics[i % metrics.length].name,
       }));
-      // setHighlights(segments);
     }
   }, [analysisComplete, inputText, metrics, questionAsked]);
-  
+
   const handleModelChange = (model: string, metricName: MetricType) => {
-    setMetrics(prevMetrics => 
-      prevMetrics.map(metric => 
+    setMetrics(prevMetrics =>
+      prevMetrics.map(metric =>
         metric.name === metricName ? { ...metric, model } : metric
       )
     );
   };
-  
+
   const handleAnalyze = async () => {
     if (!inputText.trim()) {
       toast({
@@ -122,20 +81,19 @@ const TextAnalysisTool = () => {
       });
       return;
     }
-  
+
     const user = userService.getUser();
-  
-    // 🟣 If follow-up instruction
+
     if (analysisComplete && !questionAsked) {
       if (!instruction.trim()) {
         setInstructionError("Instruction is required.");
         return;
       }
-  
+
       setInstructionError('');
       setQuestionAsked(true);
       setIsEnhancing(true);
-  
+
       const segmentsPayload = highlights.map(h => {
         const rawModel = metrics.find(m => m.name === h.metric)?.model || 'gpt-4o';
         return {
@@ -144,11 +102,10 @@ const TextAnalysisTool = () => {
           model: normalizeModelName(rawModel),
         };
       });
-  
+
       try {
-        const res = await fetch("https://prompt-pal-backend-c44b4d13347a.herokuapp.com/api/enhancing/enhanceText", {
+        const data = await apiFetch<any>('/enhancing/enhanceText', {
           method: 'POST',
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             userId: user.userId,
             fullText: inputText,
@@ -156,17 +113,16 @@ const TextAnalysisTool = () => {
             segments: segmentsPayload,
           }),
         });
-  
-        const data = await res.json();
+
         setInputText(data.enhancedText);
         setOutputText(data.enhancedText);
         setHighlights([]);
         handleSave();
-  
+
         setInstruction('');
         setAnalysisComplete(false);
         setQuestionAsked(false);
-  
+
         toast({
           title: "Instruction applied",
           description: "Enhanced version saved.",
@@ -179,51 +135,44 @@ const TextAnalysisTool = () => {
           description: "Something went wrong during enhancement.",
           variant: "destructive",
         });
-        
         setIsEnhancing(false);
       }
-  
+
       return;
     }
-  
-    // 🟡 Initial analysis
+
     setIsAnalyzing(true);
     setShowStats(false);
     setAnalysisComplete(false);
     setInstruction('');
     setInstructionError('');
     setQuestionAsked(false);
-  
+
     try {
-      const res = await fetch("https://prompt-pal-backend-c44b4d13347a.herokuapp.com/api/analyzing/analyzeText", {
+      const data = await apiFetch<any>('/analyzing/analyzeText', {
         method: 'POST',
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: user.userId,
           text: inputText,
         }),
       });
-  
-      const data = await res.json();
-  
+
       const updatedMetrics = metrics.map(m => ({
         ...m,
         score: data.percentages[m.name] || 0,
         model: data.models[m.name] || m.model,
       }));
-  
+
       const segments: HighlightSegment[] = data.analysis.map((seg: any) => ({
         text: seg.text,
         metric: seg.type,
-        model: data.models[seg.type] || 'gpt-4o' // assign model based on type
+        model: data.models[seg.type] || 'gpt-4o'
       }));
 
       setHighlights(segments);
-  
       setMetrics(updatedMetrics);
-      setHighlights(segments);
       setShowStats(true);
-  
+
       setTimeout(() => {
         setIsAnalyzing(false);
         setAnalysisComplete(true);
@@ -232,7 +181,7 @@ const TextAnalysisTool = () => {
           description: "Ask a follow-up question now.",
         });
       }, 1200);
-  
+
     } catch (error) {
       toast({
         title: "Analysis failed",
@@ -242,8 +191,7 @@ const TextAnalysisTool = () => {
       setIsAnalyzing(false);
     }
   };
-  
-  
+
   const handleReset = () => {
     setInputText('');
     setInstruction('');
@@ -254,10 +202,8 @@ const TextAnalysisTool = () => {
     setQuestionAsked(false);
     setMetrics(metrics.map(metric => ({ ...metric, score: 0 })));
   };
-  
-  
+
   const handleSave = () => {
-    // In a real app, this would save to your history or export the file
     toast({
       title: "Analysis saved",
       description: "Your analysis has been saved to history.",
@@ -267,26 +213,15 @@ const TextAnalysisTool = () => {
     setInstructionError('');
     setQuestionAsked(false);
     setAnalysisComplete(false);
-    setHighlights([]); // clear highlights so re-analyze will generate fresh ones
+    setHighlights([]);
   };
-  
-  if (isAnalyzing) {
+
+  if (isAnalyzing || isEnhancing) {
     return (
       <div className="flex justify-center items-center h-[300px] animate-fade-in">
         <div className="flex flex-col items-center gap-3 text-muted-foreground">
           <CircleDashed className="h-8 w-8 animate-spin" />
-          <p className="text-base">Analyzing your text...</p>
-        </div>
-      </div>
-    );
-  }
-  
-  if (isEnhancing) {
-    return (
-      <div className="flex justify-center items-center h-[300px] animate-fade-in">
-        <div className="flex flex-col items-center gap-3 text-muted-foreground">
-          <CircleDashed className="h-8 w-8 animate-spin" />
-          <p className="text-base">Enhancing your text...</p>
+          <p className="text-base">{isEnhancing ? "Enhancing your text..." : "Analyzing your text..."}</p>
         </div>
       </div>
     );
