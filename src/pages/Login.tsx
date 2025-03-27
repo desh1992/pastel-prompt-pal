@@ -11,7 +11,7 @@ const Login = () => {
             Welcome Back
           </h1>
           <p className="text-muted-foreground">
-            Sign in to continue to Prompt Pal
+            Sign in to continue to LLMX
             <span className="flex items-center justify-center gap-1 text-xs mt-1">
               <img src="/cyquent-logo.png" alt="Cyquent" className="h-4 w-auto" />
               Product of Cyquent Inc

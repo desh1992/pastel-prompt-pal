@@ -28,7 +28,7 @@ const Header = () => {
             to="/home" 
             className="flex items-center gap-2 text-xl font-semibold tracking-tight hover:opacity-90 transition-opacity"
           >
-            <span className="text-gradient">Prompt Pal</span>
+            <span className="text-gradient">LLMX</span>
           </Link>
         </div>
         

@@ -40,7 +40,7 @@ const Dashboard = () => {
     <div className="container max-w-6xl px-4 py-8 mx-auto animate-fade-in">
       <section className="mb-12 text-center">
         <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight text-gradient">
-          Welcome to Prompt Pal
+          Welcome to LLMX
           <span className="flex items-center justify-center gap-1 text-sm font-normal mt-1">
             <img src="/cyquent-logo.png" alt="Cyquent" className="h-5 w-auto" />
             Product of Cyquent Inc
